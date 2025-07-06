@@ -247,7 +247,7 @@ This project demonstrates:
 ## 👤 Author
 
 **Kush Varshney**  
-B.Tech CSE | MERN Stack Developer  
+B.Tech CSE | Full Stack Developer  
 [Portfolio](https://kushvarshney.vercel.app/) • [GitHub](https://github.com/Kush-Varshney) • [LinkedIn](https://www.linkedin.com/in/kush-varshney-490baa250/)
 
 ---
