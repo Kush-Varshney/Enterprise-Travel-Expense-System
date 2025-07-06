@@ -248,7 +248,7 @@ This project demonstrates:
 
 **Kush Varshney**  
 B.Tech CSE | MERN Stack Developer  
-[Portfolio](https://your-portfolio-link.com) • [GitHub](https://github.com/kush-varshney) • [LinkedIn](https://linkedin.com/in/kush-varshney)
+[Portfolio](https://kushvarshney.vercel.app/) • [GitHub](https://github.com/Kush-Varshney) • [LinkedIn](https://www.linkedin.com/in/kush-varshney-490baa250/)
 
 ---
 
