@@ -53,7 +53,7 @@ server/uploads/
 *.swo
 
 # Ignore screenshots and demo media (optional)
-screenshots/
+# screenshots/
 *.png
 *.jpg
 *.jpeg
