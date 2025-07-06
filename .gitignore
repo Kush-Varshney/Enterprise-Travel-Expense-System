@@ -1,0 +1,60 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Node dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build output
+build/
+client/build/
+server/build/
+
+# Next.js (if ever used)
+.next/
+out/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+*.log*
+
+# Environment variables
+.env
+.env.*
+client/.env
+client/.env.*
+server/.env
+server/.env.*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Vercel deployment
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Uploads and generated files
+uploads/
+server/uploads/
+
+# Local config
+*.local
+
+# Misc
+*.swp
+*.swo
+
+# Ignore screenshots and demo media (optional)
+screenshots/
+*.png
+*.jpg
+*.jpeg
+*.gif

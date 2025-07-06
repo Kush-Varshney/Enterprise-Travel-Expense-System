@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- White border -->
+  <circle cx="32" cy="32" r="31" fill="#fff"/>
+  <!-- Black circle background -->
+  <circle cx="32" cy="32" r="28" fill="#000"/>
+  <!-- Perfectly centered, large initials -->
+  <text x="32" y="38" text-anchor="middle" font-size="38" font-family="Segoe UI, Arial, Helvetica, sans-serif" fill="#fff" font-weight="bold" alignment-baseline="middle" dominant-baseline="middle">TE</text>
+</svg> 
