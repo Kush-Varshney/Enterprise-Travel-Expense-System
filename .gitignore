@@ -51,10 +51,3 @@ server/uploads/
 # Misc
 *.swp
 *.swo
-
-# Ignore screenshots and demo media (optional)
-# screenshots/
-*.png
-*.jpg
-*.jpeg
-*.gif
