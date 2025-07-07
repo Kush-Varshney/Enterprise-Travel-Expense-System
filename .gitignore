@@ -24,11 +24,12 @@ pnpm-debug.log*
 
 # Environment variables
 .env
-.env.*
 client/.env
 client/.env.*
+!client/.env.example
 server/.env
 server/.env.*
+!server/.env.example
 
 # OS generated files
 .DS_Store
