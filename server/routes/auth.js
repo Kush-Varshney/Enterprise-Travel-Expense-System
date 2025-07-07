@@ -271,7 +271,7 @@ router.post('/forgot-password', async (req, res) => {
   const { email } = req.body
   if (!email) return res.status(400).json({ message: 'Email is required' })
   const user = await User.findOne({ email })
-  if (!user) return res.status(200).json({ message: 'If that email is registered, a reset link has been sent.' })
+  if (!user) return res.status(400).json({ message: 'This email is not registered with us.' })
   const token = crypto.randomBytes(32).toString('hex')
   user.resetPasswordToken = token
   user.resetPasswordExpires = Date.now() + 1000 * 60 * 60 // 1 hour
@@ -300,5 +300,17 @@ router.post('/reset-password', async (req, res) => {
   await user.save()
   res.status(200).json({ message: 'Password has been reset. You can now log in.' })
 })
+
+// Validate Reset Token
+router.get('/validate-reset-token', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ message: 'Token is required' });
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+  if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
+  res.status(200).json({ message: 'Token is valid' });
+});
 
 module.exports = router

@@ -18,6 +18,7 @@ const Login = () => {
   const [showForgot, setShowForgot] = useState(false)
   const [forgotEmail, setForgotEmail] = useState("")
   const [forgotStatus, setForgotStatus] = useState("")
+  const [forgotErrorTimeout, setForgotErrorTimeout] = useState(null)
 
   if (isAuthenticated && !loading) {
     return <Navigate to="/dashboard" replace />
@@ -149,6 +150,8 @@ const Login = () => {
               <form className="space-y-6" onSubmit={async (e) => {
                 e.preventDefault()
                 setForgotStatus("")
+                setErrors({})
+                if (forgotErrorTimeout) clearTimeout(forgotErrorTimeout)
                 try {
                   const res = await fetch("/api/auth/forgot-password", {
                     method: "POST",
@@ -156,17 +159,35 @@ const Login = () => {
                     body: JSON.stringify({ email: forgotEmail })
                   })
                   const data = await res.json()
-                  setForgotStatus(data.message || "If that email is registered, a reset link has been sent.")
+                  if (res.ok) {
+                    setForgotStatus(data.message || "If that email is registered, a reset link has been sent.")
+                    setForgotEmail("")
+                    setTimeout(() => setForgotStatus(""), 4000)
+                  } else {
+                    setErrors({ forgotEmail: data.message || "This email is not registered with us." })
+                    setForgotEmail("")
+                    const timeout = setTimeout(() => setErrors({}), 4000)
+                    setForgotErrorTimeout(timeout)
+                  }
                 } catch {
-                  setForgotStatus("Something went wrong. Please try again later.")
+                  setErrors({ forgotEmail: "Something went wrong. Please try again later." })
+                  setForgotEmail("")
+                  const timeout = setTimeout(() => setErrors({}), 4000)
+                  setForgotErrorTimeout(timeout)
                 }
               }}>
                 <label htmlFor="forgotEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Enter your email to reset password</label>
                 <input id="forgotEmail" name="forgotEmail" type="email" required value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} className="input-field" placeholder="your@email.com" />
                 <button type="submit" className="btn-primary w-full">Send Reset Link</button>
                 {forgotStatus && <div className="mt-2 text-sm text-green-600 dark:text-green-400">{forgotStatus}</div>}
+                {errors.forgotEmail && <div className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.forgotEmail}</div>}
                 <div className="text-right mt-2">
-                  <button type="button" className="text-blue-600 hover:underline text-sm" onClick={() => setShowForgot(false)}>
+                  <button type="button" className="text-blue-600 hover:underline text-sm" onClick={() => {
+                    setShowForgot(false)
+                    setForgotEmail("")
+                    setForgotStatus("")
+                    setErrors({})
+                  }}>
                     Back to Login
                   </button>
                 </div>
