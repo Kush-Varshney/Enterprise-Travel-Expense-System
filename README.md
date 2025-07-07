@@ -122,6 +122,7 @@ JWT_SECRET=your_secret_key
 EMAIL_USER=your_email@example.com
 EMAIL_PASS=your_email_password
 CLIENT_URL=http://localhost:3000
+EMAIL_FROM=Travel Expense System <nore ply@yourdomain.com>
 ```
 
 ### Client (`client/.env`)
