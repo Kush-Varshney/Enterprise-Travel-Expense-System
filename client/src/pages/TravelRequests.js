@@ -190,8 +190,8 @@ const TravelRequests = () => {
   const filteredRequests = requests.filter(
     (request) =>
       (request.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.employee?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.employee?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.employee?.lastName.toLowerCase().includes(searchTerm.toLowerCase())) &&
       (!dateRange.start || new Date(request.createdAt) >= new Date(dateRange.start)) &&
       (!dateRange.end || new Date(request.createdAt) <= new Date(dateRange.end))
@@ -210,13 +210,13 @@ const TravelRequests = () => {
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Manage your travel requests and approvals</p>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 w-full sm:w-auto mt-4 sm:mt-0 justify-end">
-          {(user?.role === "Employee" || user?.role === "Manager") && (
+        {(user?.role === "Employee" || user?.role === "Manager") && (
             <button onClick={() => setShowModal(true)} className="btn-primary flex items-center w-full sm:w-auto justify-center mb-2 sm:mb-0">
               <PlusIcon className="h-5 w-5 mr-2" />
               New Request
             </button>
-          )}
-          {(user?.role === "Admin" || user?.role === "Manager") && (
+        )}
+        {(user?.role === "Admin" || user?.role === "Manager") && (
             <button
               className={`btn-secondary w-full sm:w-auto ${filteredRequests.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={filteredRequests.length === 0}
@@ -255,7 +255,7 @@ const TravelRequests = () => {
               Export CSV
             </button>
           )}
-        </div>
+          </div>
       </div>
 
       {/* View Toggle for Manager only */}
@@ -731,20 +731,20 @@ const TravelRequests = () => {
                     style={{ minHeight: 100, resize: 'vertical', fontSize: 14, marginBottom: 4 }}
                   />
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => handleStatusUpdate(selectedRequest._id, "Approved")}
-                      className="btn-primary"
+                  <button
+                    onClick={() => handleStatusUpdate(selectedRequest._id, "Approved")}
+                    className="btn-primary"
                       style={{ padding: '4px 16px', fontSize: 14, minWidth: 80 }}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleStatusUpdate(selectedRequest._id, "Rejected")}
-                      className="btn-secondary"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleStatusUpdate(selectedRequest._id, "Rejected")}
+                    className="btn-secondary"
                       style={{ padding: '4px 16px', fontSize: 14, minWidth: 80 }}
-                    >
-                      Reject
-                    </button>
+                  >
+                    Reject
+                  </button>
                   </div>
                 </div>
               ) : (

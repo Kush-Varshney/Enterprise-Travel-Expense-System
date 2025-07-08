@@ -194,9 +194,9 @@ const ExpenseClaims = () => {
   const filteredClaims = claims.filter(
     (claim) =>
       (claim.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        claim.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        claim.employee?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        claim.employee?.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      claim.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      claim.employee?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      claim.employee?.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         claim.travelRequest?.destination.toLowerCase().includes(searchTerm.toLowerCase())) &&
       (!dateRange.start || new Date(claim.createdAt) >= new Date(dateRange.start)) &&
       (!dateRange.end || new Date(claim.createdAt) <= new Date(dateRange.end))
@@ -235,13 +235,13 @@ const ExpenseClaims = () => {
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Submit and manage your travel expense claims</p>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 w-full sm:w-auto mt-4 sm:mt-0 justify-end">
-          {(user?.role === "Employee" || user?.role === "Manager") && (
+        {(user?.role === "Employee" || user?.role === "Manager") && (
             <button onClick={() => setShowModal(true)} className="btn-primary flex items-center w-full sm:w-auto justify-center mb-2 sm:mb-0">
               <PlusIcon className="h-5 w-5 mr-2" />
               New Claim
             </button>
-          )}
-          {(user?.role === "Admin" || user?.role === "Manager") && (
+        )}
+        {(user?.role === "Admin" || user?.role === "Manager") && (
             <button
               className={`btn-secondary w-full sm:w-auto ${filteredClaims.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={filteredClaims.length === 0}
@@ -280,7 +280,7 @@ const ExpenseClaims = () => {
               Export CSV
             </button>
           )}
-        </div>
+          </div>
       </div>
 
       {/* View Toggle for Manager only */}

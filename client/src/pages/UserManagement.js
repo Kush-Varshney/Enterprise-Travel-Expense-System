@@ -209,14 +209,14 @@ const UserManagement = () => {
                   <input type="text" className="input-field w-full" value={newUser.department} onChange={e => setNewUser({ ...newUser, department: e.target.value })} />
                 </div>
               </div>
-              <div>
+                <div>
                 <label className="block text-sm font-medium mb-1">Manager <span className="text-xs text-gray-400">(Only for Employees)</span></label>
                 <select className="input-field w-full" value={newUser.manager} onChange={e => setNewUser({ ...newUser, manager: e.target.value })} disabled={newUser.role !== "Employee"}>
-                  <option value="">None</option>
-                  {managers.map(m => (
-                    <option key={m._id} value={m._id}>{m.firstName} {m.lastName} ({m.email})</option>
-                  ))}
-                </select>
+                    <option value="">None</option>
+                    {managers.map(m => (
+                      <option key={m._id} value={m._id}>{m.firstName} {m.lastName} ({m.email})</option>
+                    ))}
+                  </select>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>

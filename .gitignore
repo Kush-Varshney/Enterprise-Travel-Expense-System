@@ -49,3 +49,7 @@ next-env.d.ts
 # Misc
 *.swp
 *.swo
+
+# Ignore uploaded files
+server/uploads/*
+!server/uploads/.gitkeep
