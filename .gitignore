@@ -42,9 +42,6 @@ Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
 
-# Uploads and generated files
-uploads/
-server/uploads/
 
 # Local config
 *.local
