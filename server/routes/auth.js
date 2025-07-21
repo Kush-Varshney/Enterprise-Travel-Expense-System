@@ -87,20 +87,25 @@ router.post(
         }
         // In-app notification for all admins
         const Notification = require('../models/Notification')
-        Notification.insertMany(admins.map(admin => ({
-          recipient: admin._id,
-          title: "New User Registration",
-          message: "A new user has registered and is awaiting approval.",
-          type: "user_pending_approval",
-          relatedId: user._id,
-          relatedModel: "User",
-        }))).catch(err => console.error('Notification insertMany failed:', err))
+        let notifDocs = [];
+        try {
+          notifDocs = await Notification.insertMany(admins.map(admin => ({
+            recipient: admin._id,
+            title: "New User Registration",
+            message: "A new user has registered and is awaiting approval.",
+            type: "user_pending_approval",
+            relatedId: user._id,
+            relatedModel: "User",
+          })));
+        } catch (err) {
+          console.error('Notification insertMany failed:', err);
+        }
         // Emit real-time notification to connected admins
         const io = req.app.get('io')
         const connectedUsers = req.app.get('connectedUsers')
         admins.forEach((admin, i) => {
           const socketId = connectedUsers[admin._id.toString()]
-          if (socketId) io.to(socketId).emit('notification', notifDocs[i]).catch(err => console.error('Socket emit failed:', err))
+          if (socketId && notifDocs[i]) io.to(socketId).emit('notification', notifDocs[i]);
         })
       }
 

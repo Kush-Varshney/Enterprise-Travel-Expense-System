@@ -97,27 +97,42 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      dispatch({ type: "SET_LOADING", payload: true })
-      const res = await axios.post("/api/auth/login", credentials)
-      // Set token in localStorage and axios headers BEFORE dispatch
-      localStorage.setItem("token", res.data.token)
-      axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`
-      dispatch({ type: "LOGIN_SUCCESS", payload: res.data })
-      await loadUser()
-      const updatedUser = res.data.user
+      dispatch({ type: "SET_LOADING", payload: true });
+  
+      // Step 1: Send login request
+      const res = await axios.post("/api/auth/login", credentials);
+  
+      // Step 2: Set token and axios header
+      localStorage.setItem("token", res.data.token);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
+  
+      // Step 3: Save token temporarily
+      dispatch({ type: "LOGIN_SUCCESS", payload: { token: res.data.token, user: {} } });
+  
+      // Step 4: Load actual user details from backend
+      const updatedUserRes = await axios.get("/api/auth/me");
+      const updatedUser = updatedUserRes.data.user;
+  
+      // Step 5: Update user in state
+      dispatch({ type: "USER_LOADED", payload: { user: updatedUser } });
+  
+      // Step 6: Redirect if inactive
       if (updatedUser.role === 'Employee' && !updatedUser.isActive) {
-        window.location.href = "/pending-approval"
-        return { success: false, message: "User is not active. Please wait for approval." }
+        window.location.href = "/pending-approval";
+        return { success: false, message: "User is not active. Please wait for approval." };
       }
-      toast.success("Login successful!")
-      return { success: true }
+  
+      toast.success("Login successful!");
+      return { success: true };
+  
     } catch (error) {
-      dispatch({ type: "AUTH_ERROR" })
-      const message = error.response?.data?.message || "Login failed"
-      toast.error(message)
-      return { success: false, message }
+      dispatch({ type: "AUTH_ERROR" });
+      const message = error.response?.data?.message || "Login failed";
+      toast.error(message);
+      return { success: false, message };
     }
-  }
+  };
+  
 
   const register = async (userData) => {
     try {

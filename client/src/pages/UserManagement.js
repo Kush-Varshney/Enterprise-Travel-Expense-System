@@ -88,6 +88,8 @@ const UserManagement = () => {
       await axios.patch(`/api/users/${id}`, payload);
       if (updates.hasOwnProperty('manager')) {
         toast.success(updates.manager === undefined || updates.manager === "" ? "Manager unassigned successfully!" : "Manager assigned successfully!");
+      } else if (updates.hasOwnProperty('isActive')) {
+        toast.success(updates.isActive ? "User activated!" : "User deactivated!");
       } else {
         toast.success("User updated!");
       }
@@ -96,7 +98,19 @@ const UserManagement = () => {
       setShowActionModal(false);
       setActionUser(null);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update user");
+      if (
+        err.response &&
+        err.response.status === 403 &&
+        err.response.data &&
+        err.response.data.message &&
+        updates.hasOwnProperty('isActive')
+      ) {
+        toast.error('Only the Super Admin can Deactivate Admins or Super Admins.');
+      } else if (err.response && err.response.status === 403 && err.response.data && err.response.data.message) {
+        toast.error(err.response.data.message || 'Only the Super Admin can modify or delete Admins or Super Admins.');
+      } else {
+        toast.error(err.response?.data?.message || "Failed to update user");
+      }
     } finally {
       if (updates.manager !== undefined) setAssigningManager(false);
       setUpdatingId(null);
@@ -133,6 +147,21 @@ const UserManagement = () => {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@#$!";
     return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   }
+
+  const handleDeleteUser = async (userId) => {
+    try {
+      await axios.delete(`/api/users/${userId}`);
+      fetchUsers();
+      setShowActionModal(false);
+      toast.success('User deleted');
+    } catch (err) {
+      if (err.response && err.response.status === 403 && err.response.data && err.response.data.message) {
+        toast.error(err.response.data.message || 'Only the Super Admin can modify or delete Admins or Super Admins.');
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to delete user');
+      }
+    }
+  };
 
   if (user?.role !== "Admin") {
     return <div className="p-8 text-center text-red-600">Access denied.</div>
@@ -487,7 +516,12 @@ const UserManagement = () => {
                 <div className="flex justify-between mt-6">
                   <button className="btn-secondary" onClick={() => setShowActionModal(false)}>Cancel</button>
                   {!actionUser.isPermanent && (
-                    <button className="btn-danger flex items-center" onClick={async () => { await axios.delete(`/api/users/${actionUser._id}`); fetchUsers(); setShowActionModal(false); toast.success('User deleted') }} disabled={user._id === actionUser._id} title={user._id === actionUser._id ? "You can't delete yourself." : "Delete user"}>
+                    <button
+                      className="btn-danger flex items-center"
+                      onClick={async () => { await handleDeleteUser(actionUser._id); }}
+                      disabled={user._id === actionUser._id}
+                      title={user._id === actionUser._id ? "You can't delete yourself." : "Delete user"}
+                    >
                       <TrashIcon className="h-4 w-4 mr-1" /> Delete User
                     </button>
                   )}
