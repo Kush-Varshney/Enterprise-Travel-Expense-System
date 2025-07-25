@@ -121,6 +121,18 @@ cd server
 node scripts/seed.js
 ```
 
+### 1.1 Default Seeded Users
+
+After running the seed script, you can log in with the following default accounts:
+
+| Role     | Email                | Password     |
+|----------|----------------------|-------------|
+| Admin    | admin@example.com    | admin123    |
+| Manager  | manager@example.com  | manager123  |
+| Employee | employee@example.com | employee123 |
+
+> **Note:** You can change these credentials in `server/scripts/seed.js` before running the script if you want custom users.
+
 ### 2. Start the Backend Server
 
 ```bash
