@@ -110,6 +110,36 @@ cd ../client
 npm install
 ```
 
+## 🏃‍♂️ Running the Project
+
+### 1. Seed the Database (Required for First-Time Setup)
+
+You must run the seed script to create initial users (such as admin accounts) before logging in.
+
+```bash
+cd server
+node scripts/seed.js
+```
+
+### 2. Start the Backend Server
+
+```bash
+node server.js
+```
+# or, for auto-reload on changes
+```bash
+npx nodemon server.js
+```
+
+### 3. Start the Frontend
+
+Open a new terminal, then:
+
+```bash
+cd client
+npm start
+```
+
 ---
 
 ## 🌐 Environment Variables
