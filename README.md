@@ -166,6 +166,9 @@ EMAIL_USER=your_email@example.com
 EMAIL_PASS=your_email_password
 CLIENT_URL=http://localhost:3000
 EMAIL_FROM=Travel Expense System <noreply@yourdomain.com>
+CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+CLOUDINARY_API_KEY=your_api_key_here
+CLOUDINARY_API_SECRET=your_api_secret_here
 ```
 
 ### Client (`client/.env`)
