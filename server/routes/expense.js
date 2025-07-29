@@ -4,8 +4,7 @@ const ExpenseClaim = require("../models/ExpenseClaim")
 const TravelRequest = require("../models/TravelRequest")
 const Notification = require("../models/Notification")
 const { auth, authorize } = require("../middleware/auth")
-const multer = require("multer")
-const path = require("path")
+const upload = require('../utils/multer');
 const { Parser } = require('json2csv')
 const AuditLog = require("../models/AuditLog")
 const sendEmail = require("../utils/sendEmail")
@@ -13,18 +12,6 @@ const User = require("../models/User")
 const dayjs = require('dayjs')
 
 const router = express.Router()
-
-// Multer storage config
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads"))
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
-    cb(null, uniqueSuffix + path.extname(file.originalname))
-  },
-})
-const upload = multer({ storage })
 
 // Create expense claim
 router.post(
@@ -127,7 +114,7 @@ router.post(
           <p style='margin-top:16px;'>You will receive an update as soon as your manager or admin reviews your claim.<br/>Thank you for using our system!</p>
           <div style='margin-top:24px; color:#64748b; font-size:0.98em;'>Sent on: ${now}</div>
         `
-      }).catch(err => console.error('Email failed:', err))
+              }).catch(err => { /* Email failed */ })
       // Send email to assigned manager (if any)
       if (expenseClaim.employee.manager) {
         const managerUser = await User.findById(expenseClaim.employee.manager)
@@ -146,13 +133,12 @@ router.post(
               <p style='margin-top:16px;'>Please review and take action in the system.</p>
               <div style='margin-top:24px; color:#64748b; font-size:0.98em;'>Sent on: ${now}</div>
             `
-          }).catch(err => console.error('Email failed:', err))
+          }).catch(err => { /* Email failed */ })
         }
       }
 
       res.status(201).json(expenseClaim)
     } catch (error) {
-      console.error(error)
       res.status(500).json({ message: "Server error" })
     }
   },
@@ -199,16 +185,15 @@ router.get("/", auth, async (req, res) => {
 
     const total = await ExpenseClaim.countDocuments(query)
 
-    res.json({
-      expenseClaims,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total,
-    })
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: "Server error" })
-  }
+          res.json({
+        expenseClaims,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        total,
+      })
+    } catch (error) {
+      res.status(500).json({ message: "Server error" })
+    }
 })
 
 // Update expense claim status
@@ -223,9 +208,9 @@ router.patch("/:id/status", auth, authorize("Manager", "Admin"), async (req, res
     if (!expenseClaim) {
       return res.status(404).json({ message: "Expense claim not found" })
     }
-    // Prevent self-approval
+    // Prevent self-approval or self-rejection
     if (expenseClaim.employee._id.toString() === req.user._id.toString()) {
-      return res.status(403).json({ message: "You cannot approve or reject your own expense claim" })
+      return res.status(403).json({ message: "You cannot approve or reject your own expense claim (self-approval is not allowed)." })
     }
 
     // Hierarchical override logic
@@ -276,7 +261,15 @@ router.patch("/:id/status", auth, authorize("Manager", "Admin"), async (req, res
           relatedId: expenseClaim._id,
           relatedModel: "ExpenseClaim",
         })
-        employeeNotification.save().catch(err => console.error('Notification failed:', err))
+        await employeeNotification.save()
+        
+        // Real-time notification to employee
+        const io = req.app.get('io')
+        const connectedUsers = req.app.get('connectedUsers')
+        const socketId = connectedUsers[expenseClaim.employee._id.toString()]
+        if (socketId) {
+          io.to(socketId).emit('notification', employeeNotification)
+        }
 
         // Real-time notification to manager if submitter is a manager and admin acts
         if (req.user.role === "Admin" && expenseClaim.employee.role === "Manager") {
@@ -344,7 +337,7 @@ router.patch("/:id/status", auth, authorize("Manager", "Admin"), async (req, res
   }
 })
 
-// Upload receipt for an expense claim
+// Upload receipt for an expense claim (Cloudinary)
 router.post(
   "/:id/receipt",
   auth,
@@ -365,12 +358,11 @@ router.post(
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" })
       }
-      claim.receiptUrl = `/uploads/${req.file.filename}`
+      claim.receiptUrl = req.file.path // Cloudinary URL
       await claim.save()
       res.json(claim)
     } catch (error) {
-      console.error(error)
-      res.status(500).json({ message: "Server error" })
+      res.status(500).json({ message: error.message || "Server error" })
     }
   },
 )

@@ -48,13 +48,6 @@ app.use(
 app.use(express.json({ limit: "10mb" }))
 app.use(express.urlencoded({ extended: true, limit: "10mb" }))
 
-// Serve uploaded receipts statically
-const uploadsPath = path.join(__dirname, "uploads");
-if (!require('fs').readdirSync(uploadsPath).length) {
-  console.warn("[WARNING] The uploads directory is empty. Uploaded files may be missing, causing 404 errors.");
-}
-app.use("/uploads", express.static(uploadsPath));
-
 // Routes
 app.use("/api/auth", require("./routes/auth"))
 app.use("/api/travel", require("./routes/travel"))

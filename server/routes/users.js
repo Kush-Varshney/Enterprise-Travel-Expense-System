@@ -2,10 +2,10 @@ const express = require("express")
 const { auth, authorize } = require("../middleware/auth")
 const User = require("../models/User")
 const AuditLog = require("../models/AuditLog")
-const multer = require("multer")
-const path = require("path")
 const sendEmail = require('../utils/sendEmail')
 const dayjs = require('dayjs')
+const upload = require('../utils/multer');
+const cloudinary = require('../utils/cloudinary');
 
 const router = express.Router()
 
@@ -178,8 +178,7 @@ router.get("/audit-log", auth, authorize("Admin"), async (req, res) => {
       if (Object.keys(filter.createdAt).length === 0) delete filter.createdAt;
     }
     // Debug logging
-    console.log("Audit log filter query params:", req.query);
-    console.log("Constructed filter object:", filter);
+
     const logs = await AuditLog.find(filter)
       .populate("user", "firstName lastName email role")
       .sort({ createdAt: -1 })
@@ -190,19 +189,33 @@ router.get("/audit-log", auth, authorize("Admin"), async (req, res) => {
   }
 })
 
-// Multer storage config for profile pictures
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads"))
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
-    cb(null, uniqueSuffix + path.extname(file.originalname))
-  },
-})
-const upload = multer({ storage })
+// Remove profile picture (Cloudinary)
+router.delete(
+  "/:id/profile-picture",
+  auth,
+  async (req, res) => {
+    try {
+      if (req.user.role !== "Admin" && req.user._id.toString() !== req.params.id) {
+        return res.status(403).json({ message: "Not authorized" })
+      }
+      const user = await User.findById(req.params.id)
+      if (!user) return res.status(404).json({ message: "User not found" })
+      if (!user.profilePicture) return res.status(400).json({ message: "No profile picture to remove" })
+      // Remove from Cloudinary if public_id exists
+      if (user.profilePicturePublicId) {
+        await cloudinary.uploader.destroy(user.profilePicturePublicId)
+      }
+      user.profilePicture = undefined
+      user.profilePicturePublicId = undefined
+      await user.save()
+      res.json({ user })
+    } catch (error) {
+      res.status(500).json({ message: error.message || "Server error" })
+    }
+  }
+)
 
-// Upload profile picture
+// Upload profile picture (Cloudinary)
 router.post(
   "/:id/profile-picture",
   auth,
@@ -215,11 +228,16 @@ router.post(
       const user = await User.findById(req.params.id)
       if (!user) return res.status(404).json({ message: "User not found" })
       if (!req.file) return res.status(400).json({ message: "No file uploaded" })
-      user.profilePicture = `/uploads/${req.file.filename}`
+      // Remove old image if exists
+      if (user.profilePicturePublicId) {
+        await cloudinary.uploader.destroy(user.profilePicturePublicId)
+      }
+      user.profilePicture = req.file.path // Cloudinary URL
+      user.profilePicturePublicId = req.file.filename // Cloudinary public_id
       await user.save()
-      res.json({ profilePicture: user.profilePicture })
+      res.json({ profilePicture: user.profilePicture, profilePicturePublicId: user.profilePicturePublicId })
     } catch (error) {
-      res.status(500).json({ message: "Server error" })
+      res.status(500).json({ message: error.message || "Server error" })
     }
   },
 )

@@ -24,7 +24,6 @@ router.get("/", auth, async (req, res) => {
       unreadCount,
     })
   } catch (error) {
-    console.error(error)
     res.status(500).json({ message: "Server error" })
   }
 })
@@ -44,7 +43,6 @@ router.patch("/:id/read", auth, async (req, res) => {
 
     res.json(notification)
   } catch (error) {
-    console.error(error)
     res.status(500).json({ message: "Server error" })
   }
 })
@@ -56,7 +54,6 @@ router.patch("/read-all", auth, async (req, res) => {
 
     res.json({ message: "All notifications marked as read" })
   } catch (error) {
-    console.error(error)
     res.status(500).json({ message: "Server error" })
   }
 })

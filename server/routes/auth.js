@@ -213,6 +213,8 @@ router.get("/me", auth, async (req, res) => {
       department: user.department,
       isActive: user.isActive,
       passwordUpdatedAt: user.passwordUpdatedAt,
+      profilePicture: user.profilePicture,
+      profilePicturePublicId: user.profilePicturePublicId,
     },
   })
 })
@@ -262,6 +264,8 @@ router.patch("/profile", auth, async (req, res) => {
         role: user.role,
         department: user.department,
         passwordUpdatedAt: user.passwordUpdatedAt,
+        profilePicture: user.profilePicture,
+        profilePicturePublicId: user.profilePicturePublicId,
       },
       message: "Profile updated successfully",
     })

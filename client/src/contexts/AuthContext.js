@@ -23,6 +23,7 @@ const authReducer = (state, action) => {
         user: {
           ...action.payload.user,
           profilePicture: makeAbsoluteProfilePicture(action.payload.user.profilePicture),
+          profilePicturePublicId: action.payload.user.profilePicturePublicId,
         },
         token: action.payload.token,
         isAuthenticated: true,
@@ -34,6 +35,7 @@ const authReducer = (state, action) => {
         user: {
           ...action.payload.user,
           profilePicture: makeAbsoluteProfilePicture(action.payload.user.profilePicture),
+          profilePicturePublicId: action.payload.user.profilePicturePublicId,
         },
         isAuthenticated: true,
         loading: false,
@@ -158,12 +160,23 @@ export const AuthProvider = ({ children }) => {
     toast.success("Logged out successfully")
   }
 
+  // Add updateUser helper to update user state reactively
+  const updateUser = (userUpdate) => {
+    // Handle profile picture URL transformation
+    const updatedUser = { ...state.user, ...userUpdate };
+    if (userUpdate.hasOwnProperty('profilePicture')) {
+      updatedUser.profilePicture = makeAbsoluteProfilePicture(userUpdate.profilePicture);
+    }
+    dispatch({ type: "USER_LOADED", payload: { user: updatedUser } });
+  };
+
   const value = {
     ...state,
     login,
     register,
     logout,
     loadUser,
+    updateUser, // add this
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

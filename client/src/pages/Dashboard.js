@@ -46,7 +46,6 @@ const Dashboard = () => {
       setStats(res.data)
       setError(null)
     } catch (error) {
-      console.error("Error fetching dashboard stats:", error)
       setError("Failed to load dashboard data. Please try again later.")
     } finally {
       setLoading(false)

@@ -8,8 +8,6 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
-  DocumentIcon,
-  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline"
 import { useAuth } from "../contexts/AuthContext"
 import { useNavigate } from "react-router-dom"
@@ -65,6 +63,9 @@ const ExpenseClaims = () => {
   const HEADER_HEIGHT = 80;
   const modalRef = useRef();
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [receiptPreview, setReceiptPreview] = useState(null)
+  const [receiptUploadError, setReceiptUploadError] = useState("")
+  const [receiptUploading, setReceiptUploading] = useState(false)
 
   useEffect(() => {
     if (user && user.isActive === false) {
@@ -100,7 +101,6 @@ const ExpenseClaims = () => {
       const res = await axios.get("/api/expense", { params })
       setClaims(res.data.expenseClaims)
     } catch (error) {
-      console.error("Error fetching expense claims:", error)
       toast.error("Failed to fetch expense claims")
     } finally {
       setLoading(false)
@@ -116,7 +116,7 @@ const ExpenseClaims = () => {
       const res = await axios.get("/api/travel", { params })
       setTravelRequests(res.data.travelRequests)
     } catch (error) {
-      console.error("Error fetching travel requests:", error)
+      // Error fetching travel requests
     }
   }
 
@@ -128,6 +128,7 @@ const ExpenseClaims = () => {
       return
     }
     setReceiptError(false)
+    setReceiptUploading(true)
     try {
       if (loading) return
       setLoading(true)
@@ -139,10 +140,13 @@ const ExpenseClaims = () => {
         fileData.append("receipt", receiptFile)
         const uploadRes = await axios.post(`/api/expense/${newClaim._id}/receipt`, fileData, {
           headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            // Optionally, you can set a progress state here
+          },
         })
         newClaim = uploadRes.data
       }
-      setClaims((prev) => [newClaim, ...prev])
+      await fetchExpenseClaims();
       setShowModal(false)
       setFormData({
         travelRequest: "",
@@ -152,13 +156,14 @@ const ExpenseClaims = () => {
         category: "Transportation",
       })
       setReceiptFile(null)
+      setReceiptPreview(null)
       if (user?.role === "Manager") setViewAll(false)
       toast.success("Expense claim submitted successfully!")
     } catch (error) {
-      console.error("Error creating expense claim:", error)
       toast.error(error?.response?.data?.message || "Failed to submit expense claim")
     } finally {
       setLoading(false)
+      setReceiptUploading(false)
     }
   }
 
@@ -211,6 +216,28 @@ const ExpenseClaims = () => {
     Miscellaneous: "📋",
   }
 
+  // Helper to format date as DD/MM/YYYY
+  const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    const date = new Date(dateStr)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  }
+
+  // Helper to format date+time as DD/MM/YYYY HH:mm
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return ''
+    const date = new Date(dateStr)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${day}/${month}/${year} ${hours}:${minutes}`
+  }
+
   // Helper to check if a file is an image
   const isImage = (url) => /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
   const isPDF = (url) => /\.pdf$/i.test(url)
@@ -221,8 +248,6 @@ const ExpenseClaims = () => {
     (claim.managerStatus === "Approved" && claim.adminStatus === "Approved") ||
     (claim.managerStatus === "Rejected" && claim.adminStatus === "Rejected")
   )
-
-  const getReceiptUrl = (url) => url?.startsWith("/uploads/") ? url : `/uploads/${url?.replace(/^.*[\\/]/, '')}`
 
   if (user && user.isActive === false) return null
 
@@ -315,55 +340,34 @@ const ExpenseClaims = () => {
       {/* Filters and Search */}
       <div className="card">
         <div className="card-body">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-wrap gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-wrap">
               <div className="flex items-center">
                 <FunnelIcon className="h-5 w-5 text-gray-400 mr-2" />
-                <select value={filter} onChange={(e) => setFilter(e.target.value)} className="input-field w-auto">
+                <select value={filter} onChange={(e) => setFilter(e.target.value)} className="input-field w-full sm:w-auto min-w-[120px]">
                   <option value="all">All Status</option>
                   <option value="Pending">Pending</option>
                   <option value="Approved">Approved</option>
                   <option value="Rejected">Rejected</option>
                 </select>
               </div>
-              {/* Date Range Filter for Admin/Manager */}
               {(user?.role === 'Admin' || user?.role === 'Manager') && (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <label className="text-sm text-gray-600 dark:text-gray-400">From</label>
-                  <div className="relative flex flex-col items-start">
-                    <input
-                      type="date"
-                      value={dateRange.start}
-                      onChange={e => setDateRange(r => ({ ...r, start: e.target.value }))}
-                      className="input-field w-auto"
-                    />
-                    {dateRange.start && (
-                      <span className="text-xs text-gray-400 mt-1">{formatDate(dateRange.start)}</span>
-                    )}
-                  </div>
+                  <input type="date" value={dateRange.start} onChange={e => setDateRange(r => ({ ...r, start: e.target.value }))} className="input-field w-full sm:w-auto min-w-[120px]" />
                   <label className="text-sm text-gray-600 dark:text-gray-400">To</label>
-                  <div className="relative flex flex-col items-start">
-                    <input
-                      type="date"
-                      value={dateRange.end}
-                      onChange={e => setDateRange(r => ({ ...r, end: e.target.value }))}
-                      className="input-field w-auto"
-                    />
-                    {dateRange.end && (
-                      <span className="text-xs text-gray-400 mt-1">{formatDate(dateRange.end)}</span>
-                    )}
-                  </div>
+                  <input type="date" value={dateRange.end} onChange={e => setDateRange(r => ({ ...r, end: e.target.value }))} className="input-field w-full sm:w-auto min-w-[120px]" />
                 </div>
               )}
             </div>
-            <div className="relative">
+            <div className="relative flex-1 min-w-[180px]">
               <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search claims..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="input-field pl-10 w-64"
+                className="input-field pl-10 w-full sm:w-64"
               />
             </div>
           </div>
@@ -464,15 +468,17 @@ const ExpenseClaims = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {claim.receiptUrl && isImage(claim.receiptUrl) && (
-                          <a href={getReceiptUrl(claim.receiptUrl)} target="_blank" rel="noopener noreferrer">
+                        {claim.receiptUrl ? (
+                          <a href={claim.receiptUrl} target="_blank" rel="noopener noreferrer">
                             <img
-                              src={getReceiptUrl(claim.receiptUrl)}
+                              src={claim.receiptUrl}
                               alt="Receipt"
                               style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, border: '1px solid #ccc' }}
                               onError={e => { e.target.onerror = null; e.target.src = ''; e.target.alt = 'File not found'; }}
                             />
                           </a>
+                        ) : (
+                          <span className="text-gray-400 text-xs">No receipt</span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -606,13 +612,51 @@ const ExpenseClaims = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Receipt</label>
+                <span className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Only JPG, JPEG, or PNG files are allowed (Max size: 5MB).</span>
                 <input
                   type="file"
-                  accept="image/*,application/pdf"
-                  onChange={e => { setReceiptFile(e.target.files[0]); setReceiptError(false); }}
-                  className={`input-field${receiptError ? ' border-red-500' : ''}`}
+                  accept="image/jpeg,image/png,image/jpg"
+                  onChange={e => {
+                    setReceiptUploadError("");
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    // Validate file type
+                    const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+                    if (!allowedTypes.includes(file.type)) {
+                      setReceiptUploadError("Only JPG, JPEG, and PNG image files are allowed.");
+                      setReceiptFile(null);
+                      setReceiptPreview(null);
+                      return;
+                    }
+                    // Validate file size
+                    if (file.size > 5 * 1024 * 1024) {
+                      setReceiptUploadError("File size must be 5MB or less.");
+                      setReceiptFile(null);
+                      setReceiptPreview(null);
+                      return;
+                    }
+                    setReceiptFile(file);
+                    setReceiptError(false);
+                    const reader = new FileReader();
+                    reader.onloadend = () => setReceiptPreview(reader.result);
+                    reader.readAsDataURL(file);
+                  }}
+                  className={`input-field${receiptError || receiptUploadError ? ' border-red-500' : ''}`}
                   required
                 />
+                {receiptPreview && (
+                  <div className="mt-2">
+                    <img src={receiptPreview} alt="Preview" className="w-24 h-24 object-cover rounded border mt-1" />
+                  </div>
+                )}
+                {receiptUploadError && (
+                  <div className="text-xs text-red-500 mt-1">{receiptUploadError}</div>
+                )}
+                {receiptUploading && (
+                  <div className="mt-2 flex items-center text-xs text-gray-500">
+                    <span className="loading-spinner mr-2"></span>Uploading receipt...
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-4 sticky bottom-0 bg-white dark:bg-gray-900 pb-2 z-10">
@@ -746,7 +790,8 @@ const ExpenseClaims = () => {
 
               {/* Action buttons for hierarchical override */}
               {((user?.role === "Manager" && selectedClaim.managerStatus === "Pending" && !isClaimFinalized(selectedClaim)) ||
-                (user?.role === "Admin" && selectedClaim.adminStatus === "Pending" && !isClaimFinalized(selectedClaim))) ? (
+                (user?.role === "Admin" && selectedClaim.adminStatus === "Pending" && !isClaimFinalized(selectedClaim))) &&
+                selectedClaim.employee?._id !== user.id ? (
                 <div className="flex flex-col gap-2 pt-2">
                   <textarea
                     className="input-field"
@@ -788,34 +833,14 @@ const ExpenseClaims = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Receipt</label>
                 {selectedClaim.receiptUrl ? (
-                  isImage(selectedClaim.receiptUrl) ? (
-                    <a href={getReceiptUrl(selectedClaim.receiptUrl)} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={getReceiptUrl(selectedClaim.receiptUrl)}
-                        alt="Receipt"
-                        style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc', cursor: 'pointer' }}
-                        onError={e => { e.target.onerror = null; e.target.src = ''; e.target.alt = 'File not found'; }}
-                      />
-                    </a>
-                  ) : isPDF(selectedClaim.receiptUrl) ? (
-                    <a
-                      href={getReceiptUrl(selectedClaim.receiptUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-600 hover:underline dark:text-primary-400"
-                    >
-                      View PDF
-                    </a>
-                  ) : (
-                    <a
-                      href={getReceiptUrl(selectedClaim.receiptUrl)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-600 hover:underline dark:text-primary-400"
-                    >
-                      Download Receipt
-                    </a>
-                  )
+                  <a href={selectedClaim.receiptUrl} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={selectedClaim.receiptUrl}
+                      alt="Receipt"
+                      style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc', cursor: 'pointer' }}
+                      onError={e => { e.target.onerror = null; e.target.src = ''; e.target.alt = 'File not found'; }}
+                    />
+                  </a>
                 ) : (
                   <span className="text-gray-400">No receipt uploaded</span>
                 )}
@@ -845,6 +870,15 @@ const ExpenseClaims = () => {
             >
               <XMarkIcon className="h-6 w-6 text-gray-700" />
             </button>
+          </div>
+        </div>
+      )}
+      {receiptUploading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 flex flex-col items-center">
+            <span className="loading-spinner mb-4"></span>
+            <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">Uploading your document...</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">Please wait while we process your file.</div>
           </div>
         </div>
       )}

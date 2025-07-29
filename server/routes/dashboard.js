@@ -76,7 +76,6 @@ router.get("/stats", auth, async (req, res) => {
       recentExpenseClaims,
     })
   } catch (error) {
-    console.error(error)
     res.status(500).json({ message: "Server error" })
   }
 })

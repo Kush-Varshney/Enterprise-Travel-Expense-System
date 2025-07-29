@@ -50,9 +50,6 @@ next-env.d.ts
 *.swp
 *.swo
 
-# Ignore uploaded files
-server/uploads/*
-!server/uploads/.gitkeep
 
 # Ignore the Project Documentation Generator script
 Project_Documentation_Generator.py

@@ -8,22 +8,9 @@ const AuditLog = require("../models/AuditLog")
 const sendEmail = require("../utils/sendEmail")
 const User = require("../models/User")
 const dayjs = require('dayjs')
-const multer = require("multer")
-const path = require("path")
+const upload = require('../utils/multer');
 
 const router = express.Router()
-
-// Multer storage config for travel documents
-const travelStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads"))
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
-    cb(null, uniqueSuffix + path.extname(file.originalname))
-  },
-})
-const travelUpload = multer({ storage: travelStorage })
 
 // Create travel request
 router.post(
@@ -90,7 +77,7 @@ router.post(
               }).then(notif => {
                 const socketId = connectedUsers[managerUser._id.toString()]
                 if (socketId) io.to(socketId).emit('notification', notif)
-              }).catch(err => console.error('Manager notification failed:', err))
+              }).catch(err => { /* Manager notification failed */ })
             }
           }
           // Notify all admins
@@ -108,7 +95,7 @@ router.post(
                 const socketId = connectedUsers[admins[i]._id.toString()]
                 if (socketId) io.to(socketId).emit('notification', adminNotifs[i])
               }
-            }).catch(err => console.error('Admin notifications failed:', err))
+            }).catch(err => { /* Admin notifications failed */ })
           }
 
           // Send confirmation email to user (with formatted dates)
@@ -125,7 +112,7 @@ router.post(
               <p style='margin-top:16px;'>You will receive an update as soon as your manager or admin reviews your request.<br/>Thank you for using our system!</p>
               <div style='margin-top:24px; color:#64748b; font-size:0.98em;'>Sent on: ${now}</div>
             `
-          }).catch(err => console.error('Email to employee failed:', err))
+          }).catch(err => { /* Email to employee failed */ })
           // Send email to assigned manager (if any)
           if (travelRequest.employee.manager) {
             const managerUser = await User.findById(travelRequest.employee.manager)
@@ -143,15 +130,14 @@ router.post(
                   <p style='margin-top:16px;'>Please review and take action in the system.</p>
                   <div style='margin-top:24px; color:#64748b; font-size:0.98em;'>Sent on: ${now}</div>
                 `
-              }).catch(err => console.error('Email to manager failed:', err))
+              }).catch(err => { /* Email to manager failed */ })
             }
           }
-        } catch (err) {
-          console.error('Side effect error:', err)
-        }
+              } catch (err) {
+        // Side effect error
+      }
       })()
     } catch (error) {
-      console.error(error)
       res.status(500).json({ message: "Server error" })
     }
   },
@@ -270,7 +256,9 @@ router.patch("/:id/status", auth, authorize("Manager", "Admin"), async (req, res
         })
         await managerNotification.save()
         const socketId = connectedUsers[travelRequest.employee._id.toString()]
-        if (socketId) io.to(socketId).emit('notification', managerNotification)
+        if (socketId) {
+          io.to(socketId).emit('notification', managerNotification)
+        }
       } else {
         // If a manager is acting on another manager's request, send the generic notification
         const employeeNotification = new Notification({
@@ -283,7 +271,9 @@ router.patch("/:id/status", auth, authorize("Manager", "Admin"), async (req, res
         })
         await employeeNotification.save()
         const empSocketId = connectedUsers[travelRequest.employee._id.toString()]
-        if (empSocketId) io.to(empSocketId).emit('notification', employeeNotification)
+        if (empSocketId) {
+          io.to(empSocketId).emit('notification', employeeNotification)
+        }
       }
     } else {
       // If submitter is an employee, always send the generic notification
@@ -297,7 +287,9 @@ router.patch("/:id/status", auth, authorize("Manager", "Admin"), async (req, res
       })
       await employeeNotification.save()
       const empSocketId = connectedUsers[travelRequest.employee._id.toString()]
-      if (empSocketId) io.to(empSocketId).emit('notification', employeeNotification)
+      if (empSocketId) {
+        io.to(empSocketId).emit('notification', employeeNotification)
+      }
     }
 
     // Log approval/rejection action to AuditLog
@@ -326,16 +318,15 @@ router.patch("/:id/status", auth, authorize("Manager", "Admin"), async (req, res
 
     res.status(200).json(travelRequest)
   } catch (error) {
-    console.error(error)
     res.status(500).json({ message: "Server error" })
   }
 })
 
-// Upload document for a travel request
+// Upload document for a travel request (Cloudinary)
 router.post(
   "/:id/document",
   auth,
-  travelUpload.single("document"),
+  upload.single("document"),
   async (req, res) => {
     try {
       const request = await TravelRequest.findById(req.params.id)
@@ -352,12 +343,11 @@ router.post(
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" })
       }
-      request.documentUrl = `/uploads/${req.file.filename}`
+      request.documentUrl = req.file.path // Cloudinary URL
       await request.save()
       res.json(request)
     } catch (error) {
-      console.error(error)
-      res.status(500).json({ message: "Server error" })
+      res.status(500).json({ message: error.message || "Server error" })
     }
   },
 )

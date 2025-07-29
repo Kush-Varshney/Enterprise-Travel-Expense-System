@@ -33,7 +33,7 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (!user?.id) return
     if (!socketRef.current) {
-      socketRef.current = io(process.env.NODE_ENV === "production" ? undefined : "http://localhost:3000", {
+      socketRef.current = io(process.env.NODE_ENV === "production" ? undefined : "http://localhost:4000", {
         withCredentials: true,
       })
       socketRef.current.on("connect", () => {
@@ -42,6 +42,12 @@ export const NotificationProvider = ({ children }) => {
       socketRef.current.on("notification", (notif) => {
         setNotifications(prev => [notif, ...prev])
         toast.success("You have a new notification!", { id: notif._id })
+      })
+      socketRef.current.on("disconnect", () => {
+        // Socket disconnected
+      })
+      socketRef.current.on("connect_error", (error) => {
+        // Connection error occurred
       })
     } else {
       socketRef.current.emit("register", user.id)

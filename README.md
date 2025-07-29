@@ -91,6 +91,7 @@ Enterprise Travel & Expense Management System is designed for modern organizatio
 - Nodemailer (email notifications)
 - JWT (authentication)
 - bcrypt (password hashing)
+- Cloudinary (For Upload Images)
 - Helmet, CORS, Express Rate Limit (security)
 
 ---
@@ -178,22 +179,6 @@ REACT_APP_API_URL=http://localhost:4000
 
 ```
 Enterprise-Travel-Expense-System/
-│
-├── README.md
-├── .gitignore
-│
-├── screenshots/
-│   ├── admin-dashboard.png
-│   ├── audit-log.png
-│   ├── approval-detail.png
-│   ├── expense-claim-form.png
-│   ├── expense-claim-list.png
-│   ├── notification-page.png
-│   ├── travel-request-form.png
-│   ├── travel-request-list.png
-│   ├── user-management.png
-│   └── user-profile.png
-│
 ├── client/
 │   ├── package.json
 │   ├── package-lock.json
@@ -210,28 +195,29 @@ Enterprise-Travel-Expense-System/
 │       ├── .env.example
 │       ├── components/
 │       │   ├── Header.js
+│       │   ├── Sidebar.js
 │       │   ├── Layout.js
 │       │   ├── LoadingSpinner.js
-│       │   ├── ProtectedRoute.js
-│       │   └── Sidebar.js
+│       │   └── ProtectedRoute.js
 │       ├── contexts/
 │       │   ├── AuthContext.js
 │       │   ├── NotificationContext.js
 │       │   └── ThemeContext.js
-│       └── pages/
-│           ├── Approvals.js
-│           ├── AuditLog.js
-│           ├── Dashboard.js
-│           ├── ExpenseClaims.js
-│           ├── Login.js
-│           ├── Notifications.js
-│           ├── PendingApproval.js
-│           ├── Profile.js
-│           ├── Register.js
-│           ├── ResetPassword.js
-│           ├── TravelRequests.js
-│           └── UserManagement.js
-│
+│       ├── pages/
+│       │   ├── Approvals.js
+│       │   ├── AuditLog.js
+│       │   ├── Dashboard.js
+│       │   ├── ExpenseClaims.js
+│       │   ├── Login.js
+│       │   ├── Notifications.js
+│       │   ├── PendingApproval.js
+│       │   ├── Profile.js
+│       │   ├── Register.js
+│       │   ├── ResetPassword.js
+│       │   ├── TravelRequests.js
+│       │   └── UserManagement.js
+│       └── utils/
+│           └── cropImage.js
 ├── server/
 │   ├── package.json
 │   ├── package-lock.json
@@ -255,7 +241,26 @@ Enterprise-Travel-Expense-System/
 │   │   ├── travel.js
 │   │   └── users.js
 │   └── utils/
+│       ├── cloudinary.js
+│       ├── multer.js
 │       └── sendEmail.js
+├── screenshots/
+│   ├── admin-dashboard.png
+│   ├── approval-detail.png
+│   ├── audit-log.png
+│   ├── expense-claim-form.png
+│   ├── expense-claim-list.png
+│   ├── notification-page.png
+│   ├── travel-request-form.png
+│   ├── travel-request-list.png
+│   ├── user-management.png
+│   └── user-profile.png
+├── README.md
+├── LICENSE
+├── .gitignore
+├── TravelExpense_Guide.docx
+└── Enterprise-Travel-and-Expense-Management-System.pdf
+
 ```
 
 ---

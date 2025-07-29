@@ -71,6 +71,9 @@ const TravelRequests = () => {
   const [submitting, setSubmitting] = useState(false)
   const [documentFile, setDocumentFile] = useState(null)
   const [documentError, setDocumentError] = useState(false)
+  const [documentPreview, setDocumentPreview] = useState(null)
+  const [documentUploadError, setDocumentUploadError] = useState("")
+  const [documentUploading, setDocumentUploading] = useState(false)
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const HEADER_HEIGHT = 80;
   const modalRef = useRef();
@@ -108,7 +111,6 @@ const TravelRequests = () => {
       const res = await axios.get("/api/travel", { params })
       setRequests(res.data.travelRequests)
     } catch (error) {
-      console.error("Error fetching travel requests:", error)
       toast.error("Failed to fetch travel requests")
     } finally {
       setLoading(false)
@@ -130,6 +132,7 @@ const TravelRequests = () => {
     setDateError(false)
     setDocumentError(false)
     setSubmitting(true)
+    setDocumentUploading(true)
     try {
       const res = await axios.post("/api/travel", formData)
       let newRequest = res.data
@@ -138,6 +141,9 @@ const TravelRequests = () => {
         fileData.append("document", documentFile)
         const uploadRes = await axios.post(`/api/travel/${newRequest._id}/document`, fileData, {
           headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            // Optionally, you can set a progress state here
+          },
         })
         newRequest = uploadRes.data
       }
@@ -152,13 +158,14 @@ const TravelRequests = () => {
         priority: "Medium",
       })
       setDocumentFile(null)
+      setDocumentPreview(null)
       if (user?.role === "Manager") setViewAll(false)
       toast.success("Travel request submitted successfully! You will be notified once it's reviewed.")
     } catch (error) {
-      console.error("Error creating travel request:", error)
       toast.error(error.response?.data?.message || "Failed to submit travel request")
     } finally {
       setSubmitting(false)
+      setDocumentUploading(false)
     }
   }
 
@@ -290,55 +297,34 @@ const TravelRequests = () => {
       {/* Filters and Search */}
       <div className="card">
         <div className="card-body">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 flex-wrap gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-wrap">
               <div className="flex items-center">
                 <FunnelIcon className="h-5 w-5 text-gray-400 mr-2" />
-                <select value={filter} onChange={(e) => setFilter(e.target.value)} className="input-field w-auto">
+                <select value={filter} onChange={(e) => setFilter(e.target.value)} className="input-field w-full sm:w-auto min-w-[120px]">
                   <option value="all">All Status</option>
                   <option value="Pending">Pending</option>
                   <option value="Approved">Approved</option>
                   <option value="Rejected">Rejected</option>
                 </select>
               </div>
-              {/* Date Range Filter for Admin/Manager */}
               {(user?.role === 'Admin' || user?.role === 'Manager') && (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <label className="text-sm text-gray-600 dark:text-gray-400">From</label>
-                  <div className="relative flex flex-col items-start">
-                    <input
-                      type="date"
-                      value={dateRange.start}
-                      onChange={e => setDateRange(r => ({ ...r, start: e.target.value }))}
-                      className="input-field w-auto"
-                    />
-                    {dateRange.start && (
-                      <span className="text-xs text-gray-400 mt-1">{formatDate(dateRange.start)}</span>
-                    )}
-                  </div>
+                  <input type="date" value={dateRange.start} onChange={e => setDateRange(r => ({ ...r, start: e.target.value }))} className="input-field w-full sm:w-auto min-w-[120px]" />
                   <label className="text-sm text-gray-600 dark:text-gray-400">To</label>
-                  <div className="relative flex flex-col items-start">
-                    <input
-                      type="date"
-                      value={dateRange.end}
-                      onChange={e => setDateRange(r => ({ ...r, end: e.target.value }))}
-                      className="input-field w-auto"
-                    />
-                    {dateRange.end && (
-                      <span className="text-xs text-gray-400 mt-1">{formatDate(dateRange.end)}</span>
-                    )}
-                  </div>
+                  <input type="date" value={dateRange.end} onChange={e => setDateRange(r => ({ ...r, end: e.target.value }))} className="input-field w-full sm:w-auto min-w-[120px]" />
                 </div>
               )}
             </div>
-            <div className="relative">
+            <div className="relative flex-1 min-w-[180px]">
               <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search requests..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="input-field pl-10 w-64"
+                className="input-field pl-10 w-full sm:w-64"
               />
             </div>
           </div>
@@ -577,13 +563,51 @@ const TravelRequests = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supporting Document</label>
+                <span className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Only JPG, JPEG, or PNG files are allowed (Max size: 5MB).</span>
                 <input
                   type="file"
-                  accept="image/*,application/pdf"
-                  onChange={e => { setDocumentFile(e.target.files[0]); setDocumentError(false); }}
-                  className={`input-field${documentError ? ' border-red-500' : ''}`}
+                  accept="image/jpeg,image/png,image/jpg"
+                  onChange={e => {
+                    setDocumentUploadError("");
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    // Validate file type
+                    const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+                    if (!allowedTypes.includes(file.type)) {
+                      setDocumentUploadError("Only JPG, JPEG, and PNG image files are allowed.");
+                      setDocumentFile(null);
+                      setDocumentPreview(null);
+                      return;
+                    }
+                    // Validate file size
+                    if (file.size > 5 * 1024 * 1024) {
+                      setDocumentUploadError("File size must be 5MB or less.");
+                      setDocumentFile(null);
+                      setDocumentPreview(null);
+                      return;
+                    }
+                    setDocumentFile(file);
+                    setDocumentError(false);
+                    const reader = new FileReader();
+                    reader.onloadend = () => setDocumentPreview(reader.result);
+                    reader.readAsDataURL(file);
+                  }}
+                  className={`input-field${documentError || documentUploadError ? ' border-red-500' : ''}`}
                   required
                 />
+                {documentPreview && (
+                  <div className="mt-2">
+                    <img src={documentPreview} alt="Preview" className="w-24 h-24 object-cover rounded border mt-1" />
+                  </div>
+                )}
+                {documentUploadError && (
+                  <div className="text-xs text-red-500 mt-1">{documentUploadError}</div>
+                )}
+                {documentUploading && (
+                  <div className="mt-2 flex items-center text-xs text-gray-500">
+                    <span className="loading-spinner mr-2"></span>Uploading document...
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-4 sticky bottom-0 bg-white dark:bg-gray-900 pb-2 z-10">
@@ -762,39 +786,28 @@ const TravelRequests = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Supporting Document</label>
                 {selectedRequest.documentUrl ? (
-                  isImage(selectedRequest.documentUrl) ? (
-                    <a href={selectedRequest.documentUrl} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={selectedRequest.documentUrl}
-                        alt="Document"
-                        style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc' }}
-                        onError={e => { e.target.onerror = null; e.target.src = ''; e.target.alt = 'File not found'; }}
-                      />
-                    </a>
-                  ) : isPDF(selectedRequest.documentUrl) ? (
-                    <a
-                      href={selectedRequest.documentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-600 hover:underline dark:text-primary-400"
-                    >
-                      View PDF
-                    </a>
-                  ) : (
-                    <a
-                      href={selectedRequest.documentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-600 hover:underline dark:text-primary-400"
-                    >
-                      Download Document
-                    </a>
-                  )
+                  <a href={selectedRequest.documentUrl} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={selectedRequest.documentUrl}
+                      alt="Document"
+                      style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc' }}
+                      onError={e => { e.target.onerror = null; e.target.src = ''; e.target.alt = 'File not found'; }}
+                    />
+                  </a>
                 ) : (
                   <span className="text-gray-400">No document uploaded</span>
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {documentUploading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 flex flex-col items-center">
+            <span className="loading-spinner mb-4"></span>
+            <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">Uploading your document...</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">Please wait while we process your file.</div>
           </div>
         </div>
       )}
