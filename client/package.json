@@ -52,5 +52,5 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "https://enterprise-travel-expense-system.onrender.com"
+  "proxy": "http://localhost:4000"
 }

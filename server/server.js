@@ -16,7 +16,7 @@ const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: process.env.NODE_ENV === "production" ? process.env.CLIENT_URL : "https://enterprise-travel-expense-system.vercel.app",
+    origin: process.env.NODE_ENV === "production" ? process.env.CLIENT_URL : "http://localhost:3000",
     credentials: true,
   },
 })
@@ -39,7 +39,7 @@ const limiter = rateLimit({
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" ? process.env.CLIENT_URL : "https://enterprise-travel-expense-system.vercel.app",
+    origin: process.env.NODE_ENV === "production" ? process.env.CLIENT_URL : "http://localhost:3000",
     credentials: true,
   }),
 )
