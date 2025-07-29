@@ -13,12 +13,14 @@ export const NotificationProvider = ({ children }) => {
   const [error, setError] = useState(null)
   const socketRef = useRef(null)
 
+  const backendUrl = process.env.REACT_APP_BACKEND_URL || "https://enterprise-travel-expense-system.onrender.com"
+
   // Fetch notifications on mount
   useEffect(() => {
     if (!user?.id) return
     setLoading(true)
     setError(null)
-    axios.get("/api/notifications")
+    axios.get(`${backendUrl}/api/notifications`)
       .then(res => {
         setNotifications(res.data.notifications)
         setLoading(false)
@@ -27,13 +29,13 @@ export const NotificationProvider = ({ children }) => {
         setError("Failed to load notifications")
         setLoading(false)
       })
-  }, [user?.id])
+  }, [user?.id, backendUrl])
 
   // Setup Socket.IO for real-time updates
   useEffect(() => {
     if (!user?.id) return
     if (!socketRef.current) {
-      socketRef.current = io(process.env.NODE_ENV === "production" ? undefined : "http://localhost:4000", {
+      socketRef.current = io(backendUrl, {
         withCredentials: true,
       })
       socketRef.current.on("connect", () => {
@@ -42,12 +44,6 @@ export const NotificationProvider = ({ children }) => {
       socketRef.current.on("notification", (notif) => {
         setNotifications(prev => [notif, ...prev])
         toast.success("You have a new notification!", { id: notif._id })
-      })
-      socketRef.current.on("disconnect", () => {
-        // Socket disconnected
-      })
-      socketRef.current.on("connect_error", (error) => {
-        // Connection error occurred
       })
     } else {
       socketRef.current.emit("register", user.id)
@@ -58,12 +54,12 @@ export const NotificationProvider = ({ children }) => {
         socketRef.current = null
       }
     }
-  }, [user?.id])
+  }, [user?.id, backendUrl])
 
   // Mark as read
   const markAsRead = async (notificationId) => {
     try {
-      await axios.patch(`/api/notifications/${notificationId}/read`)
+      await axios.patch(`${backendUrl}/api/notifications/${notificationId}/read`)
       setNotifications(
         notifications.map((notif) => (notif._id === notificationId ? { ...notif, isRead: true } : notif))
       )
@@ -72,10 +68,11 @@ export const NotificationProvider = ({ children }) => {
     }
   }
 
+
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      await axios.patch("/api/notifications/read-all")
+      await axios.patch(`${backendUrl}/api/notifications/read-all`)
       setNotifications(notifications.map((notif) => ({ ...notif, isRead: true })))
     } catch (error) {
       toast.error("Failed to mark all notifications as read")
@@ -95,4 +92,4 @@ export const useNotifications = () => {
   const context = useContext(NotificationContext)
   if (!context) throw new Error("useNotifications must be used within a NotificationProvider")
   return context
-} 
+}

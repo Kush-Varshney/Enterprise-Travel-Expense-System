@@ -285,7 +285,7 @@ router.post('/forgot-password', async (req, res) => {
   user.resetPasswordToken = token
   user.resetPasswordExpires = Date.now() + 1000 * 60 * 60 // 1 hour
   await user.save()
-  const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/reset-password/${token}`
+  const resetUrl = `${process.env.CLIENT_URL || 'https://enterprise-travel-expense-system.vercel.app'}/reset-password/${token}`
   await sendEmail({
     to: user.email,
     subject: 'Password Reset Request',
